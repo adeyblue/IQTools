@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IQTracker", "IQTracker.csproj", "{8345A29B-1F7C-4355-AFA7-0F560EBAAAD8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PuzzlePreview", "PuzzlePreview\PuzzlePreview.csproj", "{83D8878E-12E8-42F8-ACD1-7F1052F72B1F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KurushRNG", "KurushRNG\KurushRNG.csproj", "{03C1EC5F-A81C-4C68-87F2-652B770B1154}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8345A29B-1F7C-4355-AFA7-0F560EBAAAD8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8345A29B-1F7C-4355-AFA7-0F560EBAAAD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8345A29B-1F7C-4355-AFA7-0F560EBAAAD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8345A29B-1F7C-4355-AFA7-0F560EBAAAD8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83D8878E-12E8-42F8-ACD1-7F1052F72B1F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83D8878E-12E8-42F8-ACD1-7F1052F72B1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83D8878E-12E8-42F8-ACD1-7F1052F72B1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83D8878E-12E8-42F8-ACD1-7F1052F72B1F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03C1EC5F-A81C-4C68-87F2-652B770B1154}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03C1EC5F-A81C-4C68-87F2-652B770B1154}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03C1EC5F-A81C-4C68-87F2-652B770B1154}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03C1EC5F-A81C-4C68-87F2-652B770B1154}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
