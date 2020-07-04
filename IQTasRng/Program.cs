@@ -479,6 +479,48 @@ namespace KurushRNG
             }
         }
 
+        class StageWaveInfo
+        {
+            public StageWaveInfo(byte[] puzzles, int[] trns, int width, int height, int numPuzzles)
+            {
+                PuzzleData = puzzles;
+                TRNs = trns;
+                Puzzles = numPuzzles;
+                Width = width;
+                Height = height;
+            }
+
+            public int Width
+            {
+                get;
+                private set;
+            }
+
+            public int Height
+            {
+                get;
+                private set;
+            }
+
+            public int Puzzles
+            {
+                get;
+                private set;
+            }
+
+            public int[] TRNs
+            {
+                get;
+                private set;
+            }
+
+            public byte[] PuzzleData
+            {
+                get;
+                private set;
+            }
+        }
+
         static byte[] CopyPuzzle(byte[] puzzles, int startingPoint, int width, int height, bool flipped)
         {
             byte[] puzzle = new byte[width * height];
@@ -493,10 +535,94 @@ namespace KurushRNG
             return puzzle;
         }
 
+        static List<WaveSetInfo> Find10BestInRNGRange(int rngStartSeed, int rngEndSeed, List<StageWaveInfo> wavesToGenerate)
+        {
+            int numGood = 0;
+            List<WaveSetInfo> best10Sets = new List<WaveSetInfo>();
+            // i = number of frames rendered 
+            for (; rngStartSeed <= rngEndSeed; ++rngStartSeed)
+            {
+                SRand(rngStartSeed);
+                WaveSet noDupeSet = new WaveSet();
+                foreach (StageWaveInfo swi in wavesToGenerate)
+                {
+                    Wave w = GetPuzzleSet(swi);
+                    if (w == null) break;
+                    //if (wave1Pts == 0)
+                    //{
+                    //    continue;
+                    //}
+                    noDupeSet.Add(w);
+                }
+                if (noDupeSet.waves.Count != 4) continue;
+                ++numGood;
+
+                WaveSet bestSet = CheckSquashedScores(noDupeSet);
+                int bestPoints = bestSet.Points;
+                WaveSetInfo wsi = new WaveSetInfo(rngStartSeed, bestSet);
+                int numCaptures = bestSet.Capturable;
+                int turns = bestSet.Turns;
+#if CAPTURES
+                int insertIndex = best10Sets.FindIndex((x) => { return numCaptures < x.Capturable; });
+#elif POINTS
+                int insertIndex = best10Sets.FindIndex((x) => { return bestPoints > x.Points; });
+#elif TURNS
+                int insertIndex = best10Sets.FindIndex((x) => { return turns < x.Turns; });
+#endif
+                if (insertIndex == -1)
+                {
+                    if (best10Sets.Count < 10)
+                    {
+                        best10Sets.Add(wsi);
+                    }
+                }
+                else
+                {
+                    best10Sets.Insert(insertIndex, wsi);
+                    if (best10Sets.Count > 10)
+                    {
+                        best10Sets.RemoveAt(10);
+                    }
+                }
+            }
+            return best10Sets;
+        }
+
+        static void FindBestOverallCaptures(List<StageWaveInfo>[] stages)
+        {
+            int rngStart = 940;
+            int rngEnd = 0x800;
+            List<WaveSetInfo> selectedWaves = new List<WaveSetInfo>(stages.Length);
+            foreach (List<StageWaveInfo> stage in stages)
+            {
+                List<WaveSetInfo> best10 = Find10BestInRNGRange(rngStart, rngEnd, stage);
+                best10.Sort(
+                    (x, y) => {
+                        if (x.Capturable != y.Capturable)
+                        {
+                            return x.Capturable.CompareTo(y.Capturable);
+                        }
+                        else return x.Frame.CompareTo(y.Frame);
+                    }
+                );
+                WaveSetInfo best1 = best10[0];
+                selectedWaves.Add(best1);
+                rngStart = best1.Frame + 3600;
+                rngEnd = rngStart + (2 * 3600);
+            }
+            int capturable = 0;
+            foreach (WaveSetInfo wsi in selectedWaves)
+            {
+                capturable += wsi.Capturable;
+                DrawPuzzles("T:\\IQ\\best", wsi);
+            }
+            Console.WriteLine("Best of the best of each stage totals {0}/3259 capturable cubes ({1:F1}%)", capturable, (capturable / 3259.0f) * 100);
+        }
+
         static void Main(string[] args)
         {
             string puzzleDiagramsOutputDir = "T:\\IQ";
-            byte[] puzzles = File.ReadAllBytes(@"..\..\..\KurushiRNG\IQ-Group.new");
+            byte[] puzzles = File.ReadAllBytes(@"..\..\..\KurushRNG\IQ-Group.new");
             // 70 bytes between puzzles
             // 200 puzzles per size
             // 14,000 bytes between puzzle sizes
@@ -535,74 +661,82 @@ namespace KurushRNG
             byte[] sevenBy9Puzzles = new byte[14000];
             Array.Copy(puzzles, 14000 * 16, sevenBy9Puzzles, 0, 14000);
 
-            int startPoint = 0x11b2f;
-            int endPoint = 0x12368;
-            int numGood = 0;
-            List<WaveSetInfo> best10Sets = new List<WaveSetInfo>();
-            // i = number of frames rendered 
-            for (int i = startPoint; i <= endPoint; ++i)
+            List<StageWaveInfo> stage1 = new List<StageWaveInfo>(new StageWaveInfo[]
             {
-                SRand(i);
-                WaveSet noDupeSet = new WaveSet();
-                Wave w = null;
-                int wave1Pts = GetPuzzleSetPoints(sevenBy9Puzzles, TRNs.g_7x9TRNs, 7, 9, 1, out w);
-                if (wave1Pts == 0)
-                {
-                    continue;
-                }
-                noDupeSet.Add(w);
-                int wave2Pts = GetPuzzleSetPoints(sevenBy9Puzzles, TRNs.g_7x9TRNs, 7, 9, 1, out w);
-                if (wave2Pts == 0)
-                {
-                    continue;
-                }
-                noDupeSet.Add(w);
-                int wave3Pts = GetPuzzleSetPoints(sevenBy9Puzzles, TRNs.g_7x9TRNs, 7, 9, 1, out w);
-                if (wave3Pts == 0)
-                {
-                    continue;
-                }
-                noDupeSet.Add(w);
-                int wave4Pts = GetPuzzleSetPoints(sevenBy9Puzzles, TRNs.g_7x9TRNs, 7, 9, 1, out w);
-                if (wave4Pts == 0)
-                {
-                    continue;
-                }
-                noDupeSet.Add(w);
-                Console.WriteLine("Found good start frame {0}, procesing", i);
-                ++numGood;
+                new StageWaveInfo(fourBy2Puzzles, TRNs.g_4x2TRNs, 4, 2, 3),
+                new StageWaveInfo(fourBy2Puzzles, TRNs.g_4x2TRNs, 4, 2, 3),
+                new StageWaveInfo(fourBy3Puzzles, TRNs.g_4x3TRNs, 4, 3, 3),
+                new StageWaveInfo(fourBy4Puzzles, TRNs.g_4x4TRNs, 4, 4, 3)
+            });
+            List<StageWaveInfo> stage2 = new List<StageWaveInfo>(new StageWaveInfo[]
+            {
+                new StageWaveInfo(fourBy5Puzzles, TRNs.g_4x5TRNs, 4, 5, 3),
+                new StageWaveInfo(fourBy5Puzzles, TRNs.g_4x5TRNs, 4, 5, 3),
+                new StageWaveInfo(fourBy6Puzzles, TRNs.g_4x6TRNs, 4, 6, 3),
+                new StageWaveInfo(fourBy6Puzzles, TRNs.g_4x6TRNs, 4, 6, 3)
+            });
+            List<StageWaveInfo> stage3 = new List<StageWaveInfo>(new StageWaveInfo[]
+            {
+                new StageWaveInfo(fiveBy4Puzzles, TRNs.g_5x4TRNs, 5, 4, 3),
+                new StageWaveInfo(fiveBy5Puzzles, TRNs.g_5x5TRNs, 5, 5, 3),
+                new StageWaveInfo(fiveBy6Puzzles, TRNs.g_5x6TRNs, 5, 6, 3),
+                new StageWaveInfo(fiveBy6Puzzles, TRNs.g_5x6TRNs, 5, 6, 3)
+            });
+            List<StageWaveInfo> stage4 = new List<StageWaveInfo>(new StageWaveInfo[]
+            {
+                new StageWaveInfo(fiveBy7Puzzles, TRNs.g_5x7TRNs, 5, 7, 2),
+                new StageWaveInfo(fiveBy7Puzzles, TRNs.g_5x7TRNs, 5, 7, 2),
+                new StageWaveInfo(fiveBy8Puzzles, TRNs.g_5x8TRNs, 5, 8, 2),
+                new StageWaveInfo(fiveBy8Puzzles, TRNs.g_5x8TRNs, 5, 8, 2)
+            });
+            List<StageWaveInfo> stage5 = new List<StageWaveInfo>(new StageWaveInfo[]
+            {
+                new StageWaveInfo(sixBy6Puzzles, TRNs.g_6x6TRNs, 6, 6, 3),
+                new StageWaveInfo(sixBy6Puzzles, TRNs.g_6x6TRNs, 6, 6, 3),
+                new StageWaveInfo(sixBy7Puzzles, TRNs.g_6x7TRNs, 6, 7, 3),
+                new StageWaveInfo(sixBy7Puzzles, TRNs.g_6x7TRNs, 6, 7, 3)
+            });
+            List<StageWaveInfo> stage6 = new List<StageWaveInfo>(new StageWaveInfo[]
+            {
+                new StageWaveInfo(sixBy8Puzzles, TRNs.g_6x8TRNs, 6, 8, 2),
+                new StageWaveInfo(sixBy8Puzzles, TRNs.g_6x8TRNs, 6, 8, 2),
+                new StageWaveInfo(sixBy9Puzzles, TRNs.g_6x9TRNs, 6, 9, 2),
+                new StageWaveInfo(sixBy9Puzzles, TRNs.g_6x9TRNs, 6, 9, 2)
+            });
+            List<StageWaveInfo> stage7 = new List<StageWaveInfo>(new StageWaveInfo[]
+            {
+                new StageWaveInfo(sevenBy7Puzzles, TRNs.g_7x7TRNs, 7, 7, 3),
+                new StageWaveInfo(sevenBy7Puzzles, TRNs.g_7x7TRNs, 7, 7, 3),
+                new StageWaveInfo(sevenBy8Puzzles, TRNs.g_7x8TRNs, 7, 8, 3),
+                new StageWaveInfo(sevenBy8Puzzles, TRNs.g_7x8TRNs, 7, 8, 3)
+            });
+            List<StageWaveInfo> stage8 = new List<StageWaveInfo>(new StageWaveInfo[]
+            {
+                new StageWaveInfo(sevenBy8Puzzles, TRNs.g_7x8TRNs, 7, 8, 2),
+                new StageWaveInfo(sevenBy9Puzzles, TRNs.g_7x9TRNs, 7, 9, 2),
+                new StageWaveInfo(sevenBy9Puzzles, TRNs.g_7x9TRNs, 7, 9, 2),
+                new StageWaveInfo(sevenBy9Puzzles, TRNs.g_7x9TRNs, 7, 9, 2)
+            });
+            List<StageWaveInfo> stageF = new List<StageWaveInfo>(new StageWaveInfo[]
+            {
+                new StageWaveInfo(sevenBy9Puzzles, TRNs.g_7x9TRNs, 7, 9, 1),
+                new StageWaveInfo(sevenBy9Puzzles, TRNs.g_7x9TRNs, 7, 9, 1),
+                new StageWaveInfo(sevenBy9Puzzles, TRNs.g_7x9TRNs, 7, 9, 1),
+                new StageWaveInfo(sevenBy9Puzzles, TRNs.g_7x9TRNs, 7, 9, 1)
+            });
+            //List<StageWaveInfo>[] stages = new List<StageWaveInfo>[9] {
+            //    stage1, stage2, stage3, stage4, stage5, stage6, stage7, stage8, stageF
+            //};
 
-                WaveSet bestSet = CheckSquashedScores(noDupeSet);
-                int bestPoints = bestSet.Points;
-                WaveSetInfo wsi = new WaveSetInfo(i, bestSet);
-                int numCaptures = bestSet.Capturable;
-                int turns = bestSet.Turns;
-#if CAPTURES
-                int insertIndex = best10Sets.FindIndex((x) => { return numCaptures > x.Capturable; });
-#elif POINTS
-                int insertIndex = best10Sets.FindIndex((x) => { return bestPoints > x.Points; });
-#elif TURNS
-                int insertIndex = best10Sets.FindIndex((x) => { return turns < x.Turns; });
-#endif
-                if (insertIndex == -1)
-                {
-                    if (best10Sets.Count < 10)
-                    {
-                        best10Sets.Add(wsi);
-                    }
-                }
-                else
-                {
-                    best10Sets.Insert(insertIndex, wsi);
-                    if (best10Sets.Count > 10)
-                    {
-                        best10Sets.RemoveAt(10);
-                    }
-                }
-                Console.WriteLine("No dupe set points = {0}, bestSet = {1}", noDupeSet.Points, bestPoints);
-            }
-            Console.WriteLine("Found {0} candidates out of a total of {1}", numGood, (endPoint - startPoint) + 1);
-            Console.WriteLine("Best 10 points sequences found between frames {0}-{1} are", startPoint, endPoint);
+            //FindBestOverallCaptures(stages);
+
+            int startPoint = 0xb9be;
+            int endPoint = 0xb9d2;
+            //int endPoint = 0x3c41;
+            List<WaveSetInfo> best10Sets = Find10BestInRNGRange(startPoint, endPoint, stageF);
+            
+            //Console.WriteLine("Found {0} candidates out of a total of {1}", numGood, (endPoint - startPoint) + 1);
+            Console.WriteLine("Best 10 shortest turn sequences found between frames {0}-{1} are", startPoint, endPoint);
             foreach (WaveSetInfo result in best10Sets)
             {
                 Console.WriteLine("Frame {0} - {1} points, {2} captures, {3} turns", result.Frame, result.Points, result.Capturable, result.Turns);
@@ -744,28 +878,30 @@ namespace KurushRNG
             }
         }
 
-        private static int GetPuzzleSetPoints(byte[] puzzles, int[] trns, int width, int height, int numPuzzles, out Wave pickedPuzzles)
+        private static Wave GetPuzzleSet(StageWaveInfo waveInfo)
         {
             int points = 0;
+            int width = waveInfo.Width;
+            int height = waveInfo.Height;
             int area = width * height;
+            int numPuzzles = waveInfo.Puzzles;
             List<PickedPuzzle> wavePuzzles = new List<PickedPuzzle>(numPuzzles);
-            pickedPuzzles = null;
             bool flipped;
+            int[] trns = waveInfo.TRNs;
             for (int i = 0; i < numPuzzles; ++i)
             {
                 int nextPuzzle = GetNextPuzzlePattern(out flipped);
                 Debug.Assert((nextPuzzle >= 0) && (nextPuzzle < 200));
                 int puzTrn = trns[nextPuzzle];
-                if (puzTrn == 1) return 0;
-                byte[] puzzle = CopyPuzzle(puzzles, nextPuzzle * 70, width, height, flipped);
+                //if (puzTrn == 1) return null;
+                byte[] puzzle = CopyPuzzle(waveInfo.PuzzleData, nextPuzzle * 70, width, height, flipped);
                 bool hasForbidden;
                 int thisPuzzlePoints = CalcPuzzlePoints(puzzle, out hasForbidden);
                 PickedPuzzle puzz = new PickedPuzzle(puzzle, nextPuzzle, thisPuzzlePoints, flipped, !hasForbidden, false);
                 wavePuzzles.Add(puzz);
                 points += thisPuzzlePoints;
             }
-            pickedPuzzles = new Wave(wavePuzzles, width, height, puzzles, trns);
-            return points;
+            return new Wave(wavePuzzles, width, height, waveInfo.PuzzleData, trns);
         }
 
         private static PickedPuzzle GetPuzzlePoints(byte[] puzzles, int[] trns, int width, int height, PickedPuzzle pp)
@@ -818,9 +954,20 @@ namespace KurushRNG
             {
                 dupeSet = DoWaveDupeRecursion(afterDupingThisPuzzle, wave, puzzle + 2);
             }
+#if POINTS
             int dupePoints = dupeSet.Points;
             int noDupePoints = noDupeSet.Points;
-            return dupePoints > noDupePoints ? dupeSet : noDupeSet;
+            WaveSet ret = dupePoints > noDupePoints ? dupeSet : noDupeSet;
+#elif TURNS
+            int dupeTurns = dupeSet.Turns;
+            int noDupeTurns = noDupeSet.Turns;
+            WaveSet ret = dupeTurns < noDupeTurns ? dupeSet : noDupeSet;
+#elif CAPTURES
+            int dupeCaptures = dupeSet.Capturable;
+            int noDupeCaptures = noDupeSet.Capturable;
+            WaveSet ret = dupeCaptures > noDupeCaptures ? dupeSet : noDupeSet;
+#endif
+            return ret;
         }
 
         private static WaveSet CalculateKnockOnEffect(WaveSet originalSet, int startWaveIdx, int startPoint)

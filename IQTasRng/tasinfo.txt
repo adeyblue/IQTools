@@ -1,5 +1,14 @@
 This is just random notes I was making while making the tas. It's probably not useful. All addresses are specific to the Japanese version
 
+A perfect takes 66 frames
+Chopping off rows takes
+4 wide: 0x55 / 85 frames
+5 wide: 0x55 / 85 frames
+6 wide: 0x6e / 110 frames
+7 wide: 0x6e / 110 frames
+
+Capturing (first frame of state 10 to last) takes 
+0x3399 - 0x33d1 = 0x38/56 frames
 
 If already have 40 rows on stage, next perfect will push existing floor marks forward one row!!
 
@@ -19,6 +28,8 @@ srand called
 2405 (+266) - game count at 0x132 (+66)
 
 66 in-game frames from circle on title screen to the srand
+
+Score run RNG ranges
 
 End of stage 1
 First possible circle frame (pressed when bizhawk number is this)
@@ -170,23 +181,23 @@ IQ JP press L1 to Debug:
 D0076f28 0004
 30076ee8 0005
 
-Screen types:
+Game mode - one byte at address 0x76ee8 in JP:
 0 - title screen
 1 - Options
-2 - restarts the stage?
+2 - unknown - restarts the stage
 3 - loading the demonstration
-4 - noormal play/cubes rolling
+4 - normal play/cubes rolling
 5 - Debug
 6 - Pause menu
 7 - puzzle editor/original mode
-8 - (nothing)
+8 - crashes the game/nothing
 9 - Memory card
 10 - cube capturing
 11 - Controller Config
 12 - Score table
-13 - stage transistion
+13 - stage transition
 14 - wave transition
-15 - stage transition
+15 - stage bonus calcuation
 16 - beginning of ending
 17 - cube descending in ending
 18 - game over
