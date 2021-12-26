@@ -282,67 +282,524 @@ namespace IQTracker
             return a1 >> 12;
         }
 
-        //ushort[] g_iqFinalScoreMultipliers = new ushort[]{
-        //    500,
-        //    480,
-        //    250,
-        //    235,
-        //    220,
-        //    205,
-        //    185,
-        //    165,
-        //    155,
-        //    155
-        //};
+        ushort[] g_iqFinalScoreMultipliers = new ushort[]{
+            500,
+            480,
+            250,
+            235,
+            220,
+            205,
+            185,
+            165,
+            155,
+            155
+        };
 
-        //uint CalculateIQFinalIQ()
-        //{
-        //    int[] numberOfPuzzlesFaced = new int[]{};
-        //    // these scores are pre stage bonus
-        //    uint[] stageScores = new uint[9]{};
-        //    int lastStage = 9;
-        //    int previousStageScore = 0;
-        //    int[] multipliedStageScores = new int[9]{};
-        //    ulong accumulatedMultipliedScore = 0;
-        //    byte[] arrayAt800f925c = new byte[9];
-        //    ushort[] arrayAt8010344C = new ushort[4] { 100, 110, 115, 120};
-        //    uint var1c = 0, var18 = 0, var14 = 0, fourValArrayVal = 0;
-        //    for (int i = 0; i < lastStage; ++i)
-        //    {
-        //        // current stage score is Minus of stage bonus
-        //        ulong multiStageScore = stageScores[i] * g_iqFinalScoreMultipliers[i];
-        //        multipliedStageScores[i] = (int)multiStageScore;
-        //        // this is the array indexed by a2
-        //        byte[] multiStageScoreBytes = BitConverter.GetBytes(multiStageScore);
-        //        byte[] accumulatedMultiStageScoreBytes = BitConverter.GetBytes(accumulatedMultipliedScore);
-        //        // 80076B3C
-        //        uint a0 = 0;
-        //        for (int j = 0; j < 4; ++j)
-        //        {
-        //            // accumulatedMultipliedScore here is the array indexed by a1
-        //            a0 += BitConverter.ToUInt16(accumulatedMultiStageScoreBytes, j * 2);
-        //            // multiStageScore
-        //            a0 += BitConverter.ToUInt16(multiStageScoreBytes, j * 2);
-        //            byte[] a0Bytes = BitConverter.GetBytes(a0);
-        //            Array.Copy(a0Bytes, 0, accumulatedMultiStageScoreBytes, j * 2, 2);
-        //            a0 >>= 16;
-        //        }
-        //        // update the real score (this isn't done in the disassembly)
-        //        accumulatedMultipliedScore = BitConverter.ToUInt64(accumulatedMultiStageScoreBytes, 0);
-        //        // loaded at 80076B70, stored at 80076B80
-        //        uint currentIQ = (uint)accumulatedMultipliedScore;
-        //        uint var2c = (uint)(accumulatedMultipliedScore >> 32);
-        //        // these two are the sequence from 80076B88 to 80076B9C
-        //        uint arrayIndexer = arrayAt800f925c[1];
-        //        var1c = 0;
-        //        var18 = 0;
-        //        var14 = 0;
-        //        // 80076BB0
-        //        fourValArrayVal = arrayAt8010344C[arrayIndexer];
+        class GamePerformance
+        {
+            // score at end of stages / 100 (minus bonus)
+            // for instance score first stage (without bonus) = 145700 - stageScoresInHundreds[0] = 1457 / 0x5b1
+            // at end of stage 2 (without bonus) = 267500 = stageScoresInHundreds[0] = 2675 / 0xa73
+            // 0x0
+            public ushort[] stageScoresInHundreds;
 
-        //        previousStageScore = currentStageScore;
-        //    }
-        //}
+            // the number of perfects per stage (cumulative). 
+            // This counts perfects only, not excellents
+            // 0x28 - 800F9CF4
+            public ushort[] stagePerfects;
+
+            // the number of excellents per stage (cumulative).
+            // so one on the first stage = stageExcellents[0] = 1
+            // and two on the second stage = stageExcellents[1] = 3
+            // 0x3c
+            public ushort[] stageExcellents;
+
+            // cumulative over the game, upto 9 entrues
+            // (one for each stage)
+            // so for all of first stage = numberOfPuzzlesFaced[0] = 9
+            // then for start of second stage = numberOfPuzzlesFaced[1] = 10
+            // 0x50
+            public ushort[] numberOfPuzzlesFaced;
+
+            // Stage score after multiplication
+            // 0x64
+            public uint[] adjustedStageScores;
+
+            // 0x8c
+            public ushort[] stageIQScores;
+
+            // 0xA0
+            public ushort totalIQ;
+
+            public GamePerformance()
+            {
+                stageScoresInHundreds = new ushort[9];
+                stagePerfects = new ushort[9] { 2, 5, 8, 0xc, 0xf, 0xf, 0x12, 0x12, 0x13 };
+                stageExcellents = new ushort[9] { 7, 9, 0xb, 0xe, 0x10, 0x12, 0x13, 0x17, 0x19};
+                numberOfPuzzlesFaced = new ushort[9];
+                adjustedStageScores = new uint[9];
+                stageIQScores = new ushort[9];
+            }
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        struct MultiType8ByteArray
+        {
+            [FieldOffset(0)]
+            public ulong whole8;
+
+            [FieldOffset(0)]
+            public uint lowInt;
+            [FieldOffset(4)]
+            public uint highInt;
+
+            [FieldOffset(0)]
+            public ushort short1;
+            [FieldOffset(2)]
+            public ushort short2;
+            [FieldOffset(4)]
+            public ushort short3;
+            [FieldOffset(6)]
+            public ushort short4;
+
+            [FieldOffset(0)]
+            public byte byte1;
+            [FieldOffset(1)]
+            public byte byte2;
+            [FieldOffset(2)]
+            public byte byte3;
+            [FieldOffset(3)]
+            public byte byte4;
+            [FieldOffset(4)]
+            public byte byte5;
+            [FieldOffset(5)]
+            public byte byte6;
+            [FieldOffset(6)]
+            public byte byte7;
+            [FieldOffset(7)]
+            public byte byte8;
+
+            public ushort shortAt(int i)
+            {
+                switch (i)
+                {
+                    case 0: return short1;
+                    case 1: return short2;
+                    case 2: return short3;
+                    case 3: return short4;
+                }
+                return 0;
+            }
+
+            public void shortAt(int i, ushort val)
+            {
+                switch (i)
+                {
+                    case 0: short1 = val; break;
+                    case 1: short2 = val; break;
+                    case 2: short3 = val; break;
+                    case 3: short4 = val; break;
+                }
+            }
+
+            public uint intAt(int i)
+            {
+                switch (i)
+                {
+                    case 0: return lowInt;
+                    case 1: return highInt;
+                }
+                return 0;
+            }
+
+            public void intAt(int i, uint val)
+            {
+                switch (i)
+                {
+                    case 0: lowInt = val; break;
+                    case 1: highInt = val; break;
+                }
+            }
+
+            public byte byteAt(int i)
+            {
+                switch (i)
+                {
+                    case 0: return byte1;
+                    case 1: return byte2;
+                    case 2: return byte3;
+                    case 3: return byte4;
+                    case 4: return byte5;
+                    case 5: return byte6;
+                    case 6: return byte7;
+                    case 7: return byte8;
+                }
+                return 0;
+            }
+
+            public void byteAt(int i, byte val)
+            {
+                switch (i)
+                {
+                    case 0: byte1 = val; break;
+                    case 1: byte2 = val; break;
+                    case 2: byte3 = val; break;
+                    case 3: byte4 = val; break;
+                    case 4: byte5 = val; break;
+                    case 5: byte6 = val; break;
+                    case 6: byte7 = val; break;
+                    case 7: byte8 = val; break;
+                }
+            }
+
+            public MultiType8ByteArray Clone()
+            {
+                MultiType8ByteArray newCopy = new MultiType8ByteArray();
+                newCopy.whole8 = whole8;
+                return newCopy;
+            }
+        }
+
+        uint CalculateIQFinalIQ(
+            int currentStage, // 0 based, sp 0 -8 for main game, tektonics is 9
+            byte difficulty // 0 = normal, 3 = ultra hard
+        )
+        {
+            ushort previousStageScore = 0;
+            ushort[] arrayAt80103454 = new ushort[2] { 12, 10 };
+            ushort[] baseDifficultyScore = new ushort[4] { 100, 110, 115, 120 };
+            // this and the next array in memory are the same
+            // and the value that picks this array never seems to change
+            // so I think this is safe to hardcode
+            byte[] arrayAt800f9450 = new byte[] {0, 1, 0, 0, 1, 0, 0, 0};
+            // aka t2, base of this struct is 800f9ccc
+            GamePerformance t2 = new GamePerformance(), t5 = t2;
+            MultiType8ByteArray a2ArrayValue = new MultiType8ByteArray(); // sp + 0x10 + 0x14
+
+            // aka a1Array & topStack
+            MultiType8ByteArray runningMultipliedScore = new MultiType8ByteArray(); // sp + 0 + 0x4
+
+            MultiType8ByteArray a1ArrayCopy = new MultiType8ByteArray(); // sp + 0x8 + 0xc
+            MultiType8ByteArray fourShortArrayVal = new MultiType8ByteArray(); // sp + 0x18 + 0x1c
+            MultiType8ByteArray values1814 = new MultiType8ByteArray(); // sp + 0x20 + 0x24
+            // i = $t7, only loop counter, not used for indexing
+            // $t6 = only used for indexing g_iqFinalScoreMultipliers
+            // $t5 is the same as $t2 or the entire loop
+            for (int stageIter = 0; stageIter < currentStage; ++stageIter)
+            {
+                ushort puzzlesFaced = t2.numberOfPuzzlesFaced[stageIter];
+                if (puzzlesFaced != 0)
+                {
+                    // current stage score is Minus of stage bonus
+                    ushort endStageScoreInHundreds = t2.stageScoresInHundreds[stageIter];
+                    ushort scoredThisStage = (ushort)(endStageScoreInHundreds - previousStageScore);
+                    ushort curStageMultiplier = g_iqFinalScoreMultipliers[stageIter];
+                    uint curStageMultipliedScore = (uint)(scoredThisStage * curStageMultiplier);
+                    // 0x80076B30
+                    t5.adjustedStageScores[stageIter] = curStageMultipliedScore;
+                    // 80076B3C
+                    a2ArrayValue.whole8 = curStageMultipliedScore;
+                    // a0 carries the previous stage score between loops, but we have separate var for that
+                    uint a0 = 0;
+                    // j = $a3 register
+                    //for (int j = 0; j < 4; ++j)
+                    //{
+                    //    ushort scoreByteShort = a2ArrayValue.shortAt(j);
+                    //    ushort a1Value = a1Array.shortAt(j);
+                    //    a0 += a1Value;
+                    //    a0 += scoreByteShort;
+                    //    a1Array.shortAt(j, (ushort)(a0 & 0xffff));
+                    //    a0 = (uint)((int)a0 >> 16);
+                    //}
+                    // this is the equivalent of the commented out for loop above
+                    runningMultipliedScore.whole8 += a2ArrayValue.whole8;
+                    // 80076B68
+                    // this is the loading of v0 and v1 and then saving them a few lines later
+                    a1ArrayCopy = runningMultipliedScore.Clone();
+                    // these two are the sequence from 80076B88 to 80076B9C
+                    ushort difficultyBonusPercentage = baseDifficultyScore[difficulty]; // baseDifficultyScore array = 8010344C
+                    values1814.whole8 = 0;
+                    // 80076BB0
+                    fourShortArrayVal.whole8 = difficultyBonusPercentage;
+                    // first nested loop
+                    // loop from 80076BB4 to 80076C18
+                    // i = $a3
+                    /*for (int i = 0; i < 4; ++i)
+                    {
+                        // 80076BB4
+                        a0 = 0;
+                        int fourValIter = 0;
+                        // 80076BC0
+                        // j = $a1
+                        // loop from 80076C74 to 80076CBC
+                        for (int j = 0; j < 4; ++j)
+                        {
+                            ushort v1 = a1ArrayCopy.shortAt(i);
+                            ushort v0 = fourShortArrayVal.shortAt(fourValIter);
+                            uint valMul = (uint)(v1 * v0);
+                            a0 += valMul;
+                            // 80076C90 
+                            int totalLoops = i + j;
+                            if (totalLoops >= 4)
+                            {
+                                break;
+                            }
+                            ++fourValIter;
+                            v1 = values1814.shortAt(totalLoops);
+                            a0 += v1;
+                            values1814.shortAt(totalLoops, (ushort)a0);
+                            a0 >>= 16;
+                        }
+                    }*/
+                    // this is what the above commented nested for loop does
+                    // this is essentially
+                    // values1814 = runningMultipliedScore * difficultyBonusPercent;
+                    values1814.whole8 = a1ArrayCopy.whole8 * fourShortArrayVal.whole8;
+                    // 80076C1C
+                    a1ArrayCopy = values1814.Clone();
+                    // #something' here is usually / always 1, which always retrns 10
+                    byte something = arrayAt800f9450[1];
+                    a2ArrayValue.whole8 = arrayAt80103454[something];
+                    fourShortArrayVal.whole8 = 0;
+
+                    // second nested loop
+                    // loop from 80076C68 to 80076CD0
+                    // i = $a3
+                    /*for (int i = 0; i < 4; ++i)
+                    {
+                        // 80076BB4
+                        a0 = 0;
+                        int a2ArrayIter = 0;
+                        // 80076BC0
+                        // j = $a1
+                        // loop from 80076C74 to 80076CBC
+                        for (int j = 0; j < 4; ++j)
+                        {
+                            ushort v1 = a1ArrayCopy.shortAt(i);
+                            ushort v0 = a2ArrayValue.shortAt(a2ArrayIter);
+                            uint valMul = (uint)(v1 * v0);
+                            a0 += valMul;
+                            // 80076C90 
+                            int totalLoops = i + j;
+                            if (totalLoops >= 4)
+                            {
+                                break;
+                            }
+                            ++a2ArrayIter;
+                            v1 = fourShortArrayVal.shortAt(totalLoops);
+                            a0 += v1;
+                            fourShortArrayVal.shortAt(totalLoops, (ushort)a0);
+                            a0 >>= 16;
+                        }
+                    }*/
+                    // this is the equivalent to the commented out nested loops above
+                    fourShortArrayVal.whole8 = a1ArrayCopy.whole8 * a2ArrayValue.whole8;
+                    // 80076CD0
+                    a1ArrayCopy = fourShortArrayVal.Clone();
+                    // the three loads at 80076CE0
+                    ushort perfects = t2.stagePerfects[stageIter];
+                    ushort excellents = t2.stageExcellents[stageIter];
+                    ushort numPuzzlesFaced = t2.numberOfPuzzlesFaced[stageIter];
+                    a0 = (uint)(perfects + excellents);
+                    // this temp stuff is a0 * 55
+                    uint temp = a0 << 3;
+                    temp -= a0;
+                    temp <<= 3;
+                    temp -= a0;
+                    // 80076D28
+                    temp = temp / numPuzzlesFaced;
+                    fourShortArrayVal.whole8 = 0;
+                    a2ArrayValue.whole8 = temp + 100;
+                    // third nested loop
+                    // loop from 80076D50 to 80076DB4
+                    // i = $a3
+                    /*for (int i = 0; i < 4; ++i)
+                    {
+                        a0 = 0;
+                        int a2ArrayIter = 0;
+                        // j = $a1
+                        // loop from 80076C74 to 80076CBC
+                        for (int j = 0; j < 4; ++j)
+                        {
+                            ushort v1 = a1ArrayCopy.shortAt(i);
+                            ushort v0 = a2ArrayValue.shortAt(a2ArrayIter);
+                            uint valMul = (uint)(v1 * v0);
+                            a0 += valMul;
+                            // 80076C90 
+                            int totalLoops = i + j;
+                            if (totalLoops >= 4)
+                            {
+                                break;
+                            }
+                            ++a2ArrayIter;
+                            v1 = fourShortArrayVal.shortAt(totalLoops);
+                            a0 += v1;
+                            fourShortArrayVal.shortAt(totalLoops, (ushort)a0);
+                            a0 >>= 16;
+                        }
+                    }*/
+                    // this is the equivalent to the commented out nested loops above
+                    fourShortArrayVal.whole8 = a1ArrayCopy.whole8 * a2ArrayValue.whole8;
+                    // 80076DB8
+                    a1ArrayCopy = fourShortArrayVal.Clone();
+                    a2ArrayValue.whole8 = 0;
+                    a0 = 0;
+                    // i = $a3 - 80076DBC
+                    // loop from 80076DE0 to 80076E30
+                    for (int i = 3; i >= 0; --i)
+                    {
+                        a0 += a1ArrayCopy.shortAt(i);
+                        uint divRes = a0 / 10000; // 80076DEC & 80076E14
+                        uint mod = a0 % 10000; // 80076E18
+                        a0 = mod << 16;
+                        a2ArrayValue.shortAt(i, (ushort)divRes);
+                    }
+                    // 80076E34
+                    a0 = 0;
+                    // not a typo
+                    a1ArrayCopy = a2ArrayValue.Clone();
+                    a2ArrayValue.whole8 = 0;
+                    // loop from 80076E5C to 80076EAC
+                    for (int i = 3; i >= 0; --i)
+                    {
+                        a0 += a1ArrayCopy.shortAt(i);
+                        uint divRes = a0 / 10000; // 80076E68 & 80076E90
+                        uint mod = a0 % 10000; // 80076E94
+                        a0 = mod << 16;
+                        a2ArrayValue.shortAt(i, (ushort)divRes);
+                    }
+                    a0 = 0;
+                    // not a typo
+                    a1ArrayCopy = a2ArrayValue.Clone();
+                    a2ArrayValue.whole8 = 0;
+                    // loop from 80076EDC to 80076F2C
+                    for (int i = 3; i >= 0; --i)
+                    {
+                        a0 += a1ArrayCopy.shortAt(i);
+                        uint divRes = a0 / 10; // 80076EE8 & 80076F10
+                        uint mod = a0 % 10; // 80076F14
+                        a0 = mod << 16;
+                        a2ArrayValue.shortAt(i, (ushort)divRes);
+                    }
+                    a1ArrayCopy = a2ArrayValue.Clone();
+                    // for next loop, this is the a0 assignation at 80076F40
+                    previousStageScore = endStageScoreInHundreds;
+                }
+                else // numPuzzles == 0
+                {
+                    a1ArrayCopy.whole8 = 0;
+                }
+                t2.stageIQScores[stageIter] = a1ArrayCopy.shortAt(0);
+            }
+            ushort totalIQ = a1ArrayCopy.shortAt(0);
+            t2.totalIQ = totalIQ;
+            // tektonics
+            if (currentStage == 9)
+            {
+                byte indexer = difficulty; // difficulty
+                // indexer * 13
+                uint actualIndex = (uint)(indexer << 1); // * 2
+                actualIndex += indexer; // * 3
+                actualIndex <<= 2; // * 12
+                actualIndex += indexer; // * 13
+                // uint iqBonus = 
+            }
+            return t2.totalIQ;
+        }
+
+        // In the game, this calculation is run after the end of the 9 normal stages
+        // and if continued into Tektonics, is run again after Tektonics 
+        // the Tektonics calculation only calculates for tektonics
+        // data for all other stages is 0
+        uint CalculateIQFinalIQSimplified(
+            int currentStage, // 0 based, so 0-8 for main game, tektonics is 9
+            byte difficulty, // 0 = normal, 3 = ultra hard
+            GamePerformance gamePerformance // aka t2 and t5
+        )
+        {
+            ushort previousStageScore = 0;
+            ushort[] arrayAt80103454 = new ushort[2] { 12, 10 };
+            ushort[] baseDifficultyScore = new ushort[4] { 100, 110, 115, 120 };
+            // this and the next array in memory are the same
+            // and the value that picks this array never seems to change
+            // so I think this is safe to hardcode
+            byte[] arrayAt800f9450 = new byte[] {0, 1, 0, 0, 1, 0, 0, 0};
+            // aka a1ArrayCopy
+            ulong temp1 = 0; // sp + 0x8 + 0xc
+
+            // aka a2ArrayValue
+            ulong temp2; // sp + 0x10 + 0x14
+
+            // aka fourShortArrayVal
+            ulong temp4; // sp + 0x18 + 0x1c
+            ulong highestIq = 0;
+
+            // aka a1Array & topStack
+            ulong runningMultipliedScore = 0; // sp + 0 + 0x4
+            // i = $t7, only loop counter, not used for indexing
+            // $t6 = only used for indexing g_iqFinalScoreMultipliers
+            // $t5 is the same as $t2 or the entire loop
+            for (int stageIter = 0; stageIter < currentStage; ++stageIter)
+            {
+                ushort puzzlesFaced = gamePerformance.numberOfPuzzlesFaced[stageIter];
+                if (puzzlesFaced != 0)
+                {
+                    // tektonics is calculated standalone
+                    if (stageIter == 9)
+                    {
+                        previousStageScore = 0;
+                        runningMultipliedScore = 0;
+                    }
+                    // current stage score is Minus of stage bonus
+                    ushort endStageScoreInHundreds = gamePerformance.stageScoresInHundreds[stageIter];
+                    ushort scoredThisStage = (ushort)(endStageScoreInHundreds - previousStageScore);
+                    ushort curStageMultiplier = g_iqFinalScoreMultipliers[stageIter];
+                    uint curStageMultipliedScore = (uint)(scoredThisStage * curStageMultiplier);
+                    // 0x80076B30
+                    gamePerformance.adjustedStageScores[stageIter] = curStageMultipliedScore;
+                    runningMultipliedScore += curStageMultipliedScore;
+                    // 80076B3C
+                    temp2 = curStageMultipliedScore;
+                    
+                    // these two are the sequence from 80076B88 to 80076B9C
+                    ushort difficultyBonusPercentage = baseDifficultyScore[difficulty]; // baseDifficultyScore array = 8010344C
+                    ulong difficultyMultipliedScore = runningMultipliedScore * difficultyBonusPercentage;
+                    // 'indexer' here is usually / always 1, which always returns 10
+                    // may be different for TekTonics, needs checking
+                    byte indexer = arrayAt800f9450[1];
+                    temp2 = arrayAt80103454[indexer];
+
+                    // difficultyMultipliedScore * found val
+                    temp4 = difficultyMultipliedScore * temp2;
+                    // 80076CD0
+                    temp1 = temp4;
+                    // the three loads at 80076CE0
+                    ushort perfects = gamePerformance.stagePerfects[stageIter];
+                    ushort excellents = gamePerformance.stageExcellents[stageIter];
+                    ushort numPuzzlesFaced = gamePerformance.numberOfPuzzlesFaced[stageIter];
+                    uint numBetterThanGreat = (uint)(perfects + excellents);
+                    uint betterBonus = (numBetterThanGreat * 55) / numPuzzlesFaced;
+
+                    temp2 = betterBonus + 100;
+                    temp4 = temp1 * temp2;
+                    ulong stageIq = temp4 / (10000ul * 10000ul * 10ul);
+                    temp1 = stageIq;
+                    // for next loop, this is the a0 assignation at 80076F40
+                    previousStageScore = endStageScoreInHundreds;
+                    if (stageIter < 9)
+                    {
+                        highestIq = stageIq;
+                    }
+                }
+                else // numPuzzles == 0
+                {
+                    temp1 = 0;
+                }
+                gamePerformance.stageIQScores[stageIter] = (ushort)temp1;
+            }
+            ushort totalIQ = (ushort)(temp1 + highestIq);
+            return totalIQ;
+        }
     }
 }
 
