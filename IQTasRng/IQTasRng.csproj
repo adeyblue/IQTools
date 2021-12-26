@@ -26,7 +26,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;TURNSn;CAPTURES;POINTSn</DefineConstants>
+    <DefineConstants>TRACE;TURNS;CAPTURESn;POINTSn</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -37,6 +37,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\PuzzlePreview\GameInformation.cs">
+      <Link>GameInformation.cs</Link>
+    </Compile>
+    <Compile Include="..\PuzzlePreview\IQFinalPreview.cs">
+      <Link>IQFinalPreview.cs</Link>
+    </Compile>
+    <Compile Include="..\PuzzlePreview\IQPreview.cs">
+      <Link>IQPreview.cs</Link>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -43,6 +43,8 @@
             this.stepCountUpDown = new System.Windows.Forms.NumericUpDown();
             this.initialSeedTextBox = new System.Windows.Forms.TextBox();
             this.puzzleNumBox = new System.Windows.Forms.NumericUpDown();
+            this.gameText = new System.Windows.Forms.Label();
+            this.gameNameBox = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.puzzleImageBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.stepCountUpDown)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.puzzleNumBox)).BeginInit();
@@ -70,16 +72,16 @@
             "7x7",
             "7x8",
             "7x9"});
-            this.puzzleSizes.Location = new System.Drawing.Point(41, 6);
+            this.puzzleSizes.Location = new System.Drawing.Point(40, 30);
             this.puzzleSizes.Name = "puzzleSizes";
-            this.puzzleSizes.Size = new System.Drawing.Size(121, 21);
-            this.puzzleSizes.TabIndex = 0;
+            this.puzzleSizes.Size = new System.Drawing.Size(128, 21);
+            this.puzzleSizes.TabIndex = 1;
             this.puzzleSizes.SelectedIndexChanged += new System.EventHandler(this.puzzleSizes_SelectedIndexChanged);
             // 
             // sizeText
             // 
             this.sizeText.AutoSize = true;
-            this.sizeText.Location = new System.Drawing.Point(5, 9);
+            this.sizeText.Location = new System.Drawing.Point(4, 33);
             this.sizeText.Name = "sizeText";
             this.sizeText.Size = new System.Drawing.Size(30, 13);
             this.sizeText.TabIndex = 1;
@@ -88,7 +90,7 @@
             // puzzleNumText
             // 
             this.puzzleNumText.AutoSize = true;
-            this.puzzleNumText.Location = new System.Drawing.Point(168, 9);
+            this.puzzleNumText.Location = new System.Drawing.Point(171, 9);
             this.puzzleNumText.Name = "puzzleNumText";
             this.puzzleNumText.Size = new System.Drawing.Size(47, 13);
             this.puzzleNumText.TabIndex = 2;
@@ -119,7 +121,7 @@
             // puzzleTRN
             // 
             this.puzzleTRN.AutoSize = true;
-            this.puzzleTRN.Location = new System.Drawing.Point(118, 33);
+            this.puzzleTRN.Location = new System.Drawing.Point(199, 61);
             this.puzzleTRN.Name = "puzzleTRN";
             this.puzzleTRN.Size = new System.Drawing.Size(33, 13);
             this.puzzleTRN.TabIndex = 7;
@@ -127,7 +129,7 @@
             // 
             // trnTextBox
             // 
-            this.trnTextBox.Location = new System.Drawing.Point(157, 31);
+            this.trnTextBox.Location = new System.Drawing.Point(238, 59);
             this.trnTextBox.MaxLength = 2;
             this.trnTextBox.Name = "trnTextBox";
             this.trnTextBox.ReadOnly = true;
@@ -137,7 +139,7 @@
             // seedText
             // 
             this.seedText.AutoSize = true;
-            this.seedText.Location = new System.Drawing.Point(5, 32);
+            this.seedText.Location = new System.Drawing.Point(86, 60);
             this.seedText.Name = "seedText";
             this.seedText.Size = new System.Drawing.Size(35, 13);
             this.seedText.TabIndex = 9;
@@ -202,7 +204,7 @@
             // 
             // initialSeedTextBox
             // 
-            this.initialSeedTextBox.Location = new System.Drawing.Point(41, 31);
+            this.initialSeedTextBox.Location = new System.Drawing.Point(122, 59);
             this.initialSeedTextBox.MaxLength = 7;
             this.initialSeedTextBox.Name = "initialSeedTextBox";
             this.initialSeedTextBox.Size = new System.Drawing.Size(68, 20);
@@ -232,11 +234,32 @@
             0});
             this.puzzleNumBox.ValueChanged += new System.EventHandler(this.puzzleNumBox_ValueChanged);
             // 
+            // gameText
+            // 
+            this.gameText.AutoSize = true;
+            this.gameText.Location = new System.Drawing.Point(5, 7);
+            this.gameText.Name = "gameText";
+            this.gameText.Size = new System.Drawing.Size(38, 13);
+            this.gameText.TabIndex = 22;
+            this.gameText.Text = "Game:";
+            // 
+            // gameNameBox
+            // 
+            this.gameNameBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.gameNameBox.FormattingEnabled = true;
+            this.gameNameBox.Location = new System.Drawing.Point(40, 4);
+            this.gameNameBox.Name = "gameNameBox";
+            this.gameNameBox.Size = new System.Drawing.Size(125, 21);
+            this.gameNameBox.TabIndex = 0;
+            this.gameNameBox.SelectedIndexChanged += new System.EventHandler(this.gameNameBox_SelectedIndexChanged);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(269, 395);
+            this.Controls.Add(this.gameNameBox);
+            this.Controls.Add(this.gameText);
             this.Controls.Add(this.puzzleNumBox);
             this.Controls.Add(this.initialSeedTextBox);
             this.Controls.Add(this.stepCountUpDown);
@@ -279,6 +302,8 @@
         private System.Windows.Forms.NumericUpDown stepCountUpDown;
         private System.Windows.Forms.TextBox initialSeedTextBox;
         private System.Windows.Forms.NumericUpDown puzzleNumBox;
+        private System.Windows.Forms.Label gameText;
+        private System.Windows.Forms.ComboBox gameNameBox;
     }
 }
 
